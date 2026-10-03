@@ -14,6 +14,6 @@ export async function sendTranscodeCompleted(videoId, codec, outputKey, sizeByte
   });
 
   const result = await sqsClient.send(command);
-  log(`SQS sent: ${codec} completion for video ${videoId} (MessageId=${result.MessageId})`);
+  log(`SQS sent: vid: ${videoId} ${codec} completion`);
   return result.MessageId;
 }
