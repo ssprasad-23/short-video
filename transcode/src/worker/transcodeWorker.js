@@ -34,7 +34,7 @@ async function processMessage(message) {
   }
 
   const originalBytes = await getObjectSize(ORIGINAL_BUCKET, key);
-  log(`Transcode message received: videoId=${videoId} (original ${originalBytes === null ? 'missing' : formatMb(originalBytes)})`);
+  log(`SQS received: transcode job for video ${videoId} (original ${originalBytes === null ? 'missing' : formatMb(originalBytes)}) (MessageId=${message.MessageId})`);
 
   const { job } = await ensureTranscodeJob(videoId, key);
 
@@ -50,7 +50,7 @@ async function processMessage(message) {
   if (missingOutputs(job).length === 0) {
     // everything was encoded on a previous delivery (maybe it crashed before marking the job)
     if (job.status !== 'completed') await markTranscodeCompleted(videoId);
-    log(`Transcode message skipped: videoId=${videoId} already has all outputs`);
+    log(`SQS done: transcode job for video ${videoId} skipped, already has all outputs (MessageId=${message.MessageId})`);
     return; // ack so it isn't redelivered
   }
 
@@ -62,7 +62,7 @@ async function processMessage(message) {
       sendTranscodeCompleted(videoId, codec, outputKey, sizeBytes)
     );
     const summary = Object.entries(encodedBytes).map(([codec, bytes]) => `${codec} ${formatMb(bytes)}`).join(', ');
-    log(`Transcode message processed: videoId=${videoId} (original ${formatMb(sourceBytes)} -> ${summary})`);
+    log(`SQS done: transcode job for video ${videoId} processed (original ${formatMb(sourceBytes)} -> ${summary}) (MessageId=${message.MessageId})`);
   } catch (err) {
     // The original is gone from the bucket — retrying can't bring it back, so ack the
     // message instead of letting SQS redeliver it forever. runTranscodeJob has already
