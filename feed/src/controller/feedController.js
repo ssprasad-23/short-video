@@ -102,8 +102,12 @@ export const getFeed = async (req, res, next) => {
         if (cacheStatus) res.set("X-Cache", cacheStatus)
         handleResponse(res, 200, "Feed fetched", data)
 
-        // respond first, then cache in the background — the user doesn't wait for the save
-        if (cacheStatus === "MISS") writeFirstPageCache(data)
+        // respond first, then cache in the background — the user doesn't wait for the save.
+        // An empty feed isn't cached, so the first upload shows up on the next request.
+        if (cacheStatus === "MISS") {
+            if (videos.length) writeFirstPageCache(data)
+            else log(`Redis SET skipped: feed is empty, nothing to cache in ${FEED_FIRST_PAGE_KEY}`)
+        }
     } catch (err) {
         next(err)
     }

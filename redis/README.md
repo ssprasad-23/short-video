@@ -80,9 +80,10 @@ curl -si "http://localhost:8080/feed?limit=3" -H "Authorization: Bearer <token>"
 2:40am feed: Redis SET: cached first feed page from Postgres in feed:first (3 videos, expires in 30s)
 2:40am feed: Redis HIT: first feed page served from cache (3 videos, key feed:first)
 2:45am feed: Redis BYPASS: Redis unavailable, serving first feed page from Postgres (not cached)
+2:50am feed: Redis SET skipped: feed is empty, nothing to cache in feed:first
 ```
 
-On a miss the response is sent before the `SET`, so the user never waits for the cache write.
+On a miss the response is sent before the `SET`, so the user never waits for the cache write. An empty feed is never cached, so the first uploaded video appears on the next request instead of up to 30s later.
 
 ## Why there's no separate cache service
 
