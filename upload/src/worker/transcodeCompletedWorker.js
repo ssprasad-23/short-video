@@ -33,7 +33,7 @@ async function processMessage(message) {
     logError(`Transcode completion for unknown videoId=${videoId}, ignoring`);
     return;
   }
-  log(`Transcoded ${codec} key saved for video ${videoId}: ${outputKey} (${sizeMb}MB)`);
+  log(`SQS received: ${codec} completion for video ${videoId}, key saved: ${outputKey} (${sizeMb}MB) (MessageId=${message.MessageId})`);
 }
 
 export function startTranscodeCompletedWorker() {
