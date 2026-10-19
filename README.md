@@ -1,6 +1,6 @@
 # Short Video
 
-A TikTok-style short-video app built as a set of microservices. Users sign up, upload clips from their phone, and scroll a full-screen vertical feed. Every upload is transcoded in the background into H.264 and AV1.
+A short-video scrolling app built as a set of microservices. Users sign up, upload videos from their phone, and scroll a full-screen vertical feed. Every upload is transcoded in the background into H.264 and AV1.
 
 [![Watch the demo](https://img.youtube.com/vi/Euiiwb3QKg0/hqdefault.jpg)](https://www.youtube.com/watch?v=Euiiwb3QKg0)
 
@@ -10,12 +10,12 @@ A TikTok-style short-video app built as a set of microservices. Users sign up, u
 
 ## Highlights
 
-- **Microservice backend.** Five Node.js services (gateway, auth, upload, transcode, feed). Each has its own responsibility, and they talk over HTTP and message queues.
+- **Microservice backend.** Five Node.js services (apigateway, auth, upload, transcode, feed). Each has its own responsibility, and they talk over HTTP and message queues.
 - **API gateway with a single point of auth.** The gateway checks the JWT once, then passes the caller's identity to the services behind it in trusted headers. Clients can't spoof those headers.
-- **Direct-to-S3 uploads.** The upload service hands out presigned URLs, so video files go straight from the phone to object storage and never pass through an API server.
-- **Async transcoding pipeline over SQS.** A worker downloads each upload, runs `ffmpeg` to make an **H.264** file (plays on every device) and an **AV1** file (smaller, for hardware decoders), extracts thumbnail frames, and reports each finished file back over a second queue.
+- **Direct-to-S3 uploads.** The upload service returns presigned URLs, so video files go straight from the phone to object storage and never pass through an API server.
+- **Async transcoding pipeline over SQS.** A worker downloads each upload, runs `ffmpeg` to make an **H.264** **AV1**, extracts thumbnail frames, and reports each finished file back over a second queue.
 - **Retry-safe jobs that resume.** Encodes can be retried safely and pick up where they stopped. If the worker crashes during the AV1 step, the retry re-encodes only AV1. A visibility-timeout heartbeat keeps long encodes from being handed to a second worker.
-- **Fast feed.** Pages are fetched by `(created_at, video_id)` cursor rather than offset, and the most-requested first page is cached in **Redis** (cache-aside, 30s TTL, `X-Cache` header). If Redis goes down, the feed still works from Postgres.
+- **Fast feed.** Pages are fetched by `(created_at, video_id)` cursor rather than offset, and the requested first page is cached in **Redis** (cache-aside, 30s TTL, `X-Cache` header). If Redis goes down, the feed still works from Postgres.
 - **React Native client.** Full-screen snap-scrolling feed where only the on-screen video plays, landscape support, and silent token refresh.
 
 ## Architecture
@@ -179,12 +179,3 @@ Or run a single service, e.g. `npm run dev:feed`.
 ```
 
 Every backend service uses the same layout: `server.js` → `src/routes` → `src/controller` → `src/models` → `src/config`.
-
-## What's next
-
-- Clear the cached first feed page when a new H.264 file lands, so new videos appear right away instead of within 30s
-- Show transcode status (processing / failed) in the app
-- Likes, comments, usernames and avatars on posts
-- Rate limiting at the gateway (Redis `INCR` + `EXPIRE`)
-- Pick AV1 on devices that have a hardware AV1 decoder
-- Docker Compose for one-command setup, plus automated tests and CI
